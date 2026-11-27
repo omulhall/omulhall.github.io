@@ -1,0 +1,102 @@
+<canvas class="bg-grid" aria-hidden="true"></canvas>
+
+<script>
+	const GRID_MAJOR = 24;
+	const GRID_MINOR = 6;
+	const MINOR_ALPHA = 0.08;
+	const MAJOR_ALPHA = 0.22;
+	const CROSS_ALPHA = 0.25;
+
+	function getAccentColor() {
+		return (
+			getComputedStyle(document.body).getPropertyValue("--accent").trim() || "180, 180, 180"
+		);
+	}
+
+	function drawGrid() {
+		const canvas = document.querySelector(".bg-grid");
+		if (!(canvas instanceof HTMLCanvasElement)) return;
+
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		const dpr = window.devicePixelRatio || 1;
+		const width = window.innerWidth;
+		const height = window.innerHeight;
+
+		canvas.width = Math.floor(width * dpr);
+		canvas.height = Math.floor(height * dpr);
+		canvas.style.width = `${width}px`;
+		canvas.style.height = `${height}px`;
+
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		ctx.clearRect(0, 0, width, height);
+
+		const accent = getAccentColor();
+
+		// Minor grid lines
+		ctx.beginPath();
+		ctx.strokeStyle = `rgba(${accent}, ${MINOR_ALPHA})`;
+		ctx.lineWidth = 1;
+		for (let x = 0; x <= width; x += GRID_MINOR) {
+			ctx.moveTo(x, 0);
+			ctx.lineTo(x, height);
+		}
+		for (let y = 0; y <= height; y += GRID_MINOR) {
+			ctx.moveTo(0, y);
+			ctx.lineTo(width, y);
+		}
+		ctx.stroke();
+
+		// Major grid lines
+		ctx.beginPath();
+		ctx.strokeStyle = `rgba(${accent}, ${MAJOR_ALPHA})`;
+		ctx.lineWidth = 1;
+		for (let x = 0; x <= width; x += GRID_MAJOR) {
+			ctx.moveTo(x, 0);
+			ctx.lineTo(x, height);
+		}
+		for (let y = 0; y <= height; y += GRID_MAJOR) {
+			ctx.moveTo(0, y);
+			ctx.lineTo(width, y);
+		}
+		ctx.stroke();
+
+		// Cross markers centered on each major cell, offset by half a cell,
+		// tinted to blend with the major grid lines.
+		ctx.fillStyle = `rgba(${accent}, ${CROSS_ALPHA})`;
+		for (let x = 0; x <= width; x += GRID_MAJOR) {
+			for (let y = 0; y <= height; y += GRID_MAJOR) {
+				ctx.fillRect(x - 0.5, y - 3, 1, 6);
+				ctx.fillRect(x - 3, y - 0.5, 6, 1);
+			}
+		}
+
+		// Fade the grid out toward the bottom of the viewport
+		ctx.globalCompositeOperation = "destination-in";
+		const fade = ctx.createLinearGradient(0, 0, 0, height);
+		fade.addColorStop(0, "rgba(0, 0, 0, 1)");
+		fade.addColorStop(0.55, "rgba(0, 0, 0, 1)");
+		fade.addColorStop(1, "rgba(0, 0, 0, 0)");
+		ctx.fillStyle = fade;
+		ctx.fillRect(0, 0, width, height);
+		ctx.globalCompositeOperation = "source-over";
+	}
+
+	function init() {
+		drawGrid();
+	}
+
+	init();
+	document.addEventListener("astro:page-load", init);
+	window.addEventListener("resize", drawGrid);
+</script>
+
+<style>
+	.bg-grid {
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+	}
+</style>
